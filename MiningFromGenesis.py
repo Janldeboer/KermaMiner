@@ -43,12 +43,15 @@ class MiningFromGenesis:
     def start(self, num_blocks = 10):
         #self.load_from_files()
         while len(self.blocks) < num_blocks:
-            self.blocks.append(self.mine_next_block())
+            result = self.mine_next_block()
+            block = result[0]
+            self.blocks.append(block)
             self.save_to_files()
 
     def mine_next_block(self):
         new_block = self.create_new_block()
         last_time = time.time()
+        number_of_tries = int(new_block["nonce"], 16) - int(MiningFromGenesis.START_NONCE, 16)
         while not MiningFromGenesis.is_valid_block(new_block):
             new_block["nonce"] = MiningFromGenesis.increment_nonce(new_block["nonce"])
             # print every 100000 tries
@@ -60,6 +63,7 @@ class MiningFromGenesis:
                 print(f"Block {len(self.blocks)}: {number_of_tries} tries, hash rate: {round(hash_rate)} hashes per second")
         return new_block
                 hash_rate = MiningFromGenesis.UPDATE_RATE / time_diff
+        return (new_block, number_of_tries)
 
     def create_new_block(self):
       prev_block_id = MiningFromGenesis.get_id_from_json(self.blocks[-1])
