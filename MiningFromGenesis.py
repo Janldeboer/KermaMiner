@@ -19,7 +19,7 @@ class MiningFromGenesis:
     }
 
     TARGET = "00000002af000000000000000000000000000000000000000000000000000000"
-    EXPECTED_TRIES = (16 ** 5) * (16 / 3) * (16 / 11) * (16 / 15) # not sure if this is correct, but enough for estimating
+    EXPECTED_TRIES = (16 ** 7) * (16 / 3) * (16 / 11) * (16 / 15) # not sure if this is correct, but enough for estimating
 
     START_NONCE = "4206900000000000000000000000000000000000000000000000000000000000"
 
