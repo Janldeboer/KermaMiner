@@ -40,7 +40,7 @@ class MiningFromGenesis:
         print(f"Starting nonce: {MiningFromGenesis.START_NONCE}")
 
     def start(self, num_blocks = 10):
-        self.load_from_files()
+        #self.load_from_files()
         while len(self.blocks) < num_blocks:
             self.blocks.append(self.mine_next_block())
             self.save_to_files()
