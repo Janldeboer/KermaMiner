@@ -3,6 +3,7 @@ import time
 import hashlib
 import json_canonical
 import json
+import sys
 
 class MiningFromGenesis:
 
