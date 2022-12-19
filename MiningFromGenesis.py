@@ -28,6 +28,8 @@ class MiningFromGenesis:
     FILE_NAME_BLOCKS = "blocks.json"
     FILE_NAME_COINBASE = "coinbase.json"
 
+    UPDATE_RATE = 20000
+
     def __init__(self):
         self.blocks = [MiningFromGenesis.GENESIS_BLOCK]
         self.coinbase_transactions = []
@@ -50,13 +52,13 @@ class MiningFromGenesis:
             new_block["nonce"] = MiningFromGenesis.increment_nonce(new_block["nonce"])
             # print every 100000 tries
             number_of_tries = int(new_block["nonce"], 16) - int(MiningFromGenesis.START_NONCE, 16)
-            if number_of_tries % 100000 == 0:
+            if number_of_tries % MiningFromGenesis.UPDATE_RATE == 0:
                 time_now = time.time()
                 time_diff = time_now - last_time
                 last_time = time_now
-                hash_rate = 100000 / time_diff
                 print(f"Block {len(self.blocks)}: {number_of_tries} tries, hash rate: {round(hash_rate)} hashes per second")
         return new_block
+                hash_rate = MiningFromGenesis.UPDATE_RATE / time_diff
 
     def create_new_block(self):
       prev_block_id = MiningFromGenesis.get_id_from_json(self.blocks[-1])
