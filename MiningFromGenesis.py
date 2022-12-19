@@ -65,7 +65,6 @@ class MiningFromGenesis:
                 time_diff = time_now - last_time
                 last_time = time_now
                 print(f"Block {len(self.blocks)}: {number_of_tries} tries, hash rate: {round(hash_rate)} hashes per second")
-        return new_block
                 hash_rate = MiningFromGenesis.UPDATE_RATE / time_diff
                 MiningFromGenesis.update_progress(number_of_tries / MiningFromGenesis.EXPECTED_TRIES, hash_rate)
         return (new_block, number_of_tries)
