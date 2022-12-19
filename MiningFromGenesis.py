@@ -3,6 +3,8 @@ import time
 import hashlib
 import json_canonical
 import json
+import pyopencl as cl
+import sys
 
 class MiningFromGenesis:
 
@@ -17,7 +19,7 @@ class MiningFromGenesis:
       "type" : "block"
     }
 
-    TARGET = "00000002af000000000000000000000000000000000000000000000000000000"
+    TARGET = "00000daf00000000000000000000000000000000000000000000000000000000"
     EXPECTED_TRIES = (16 ** 5) * (16 / 3) * (16 / 11) * (16 / 15) # not sure if this is correct, but enough for estimating
 
     START_NONCE = "4206900000000000000000000000000000000000000000000000000000000000"
@@ -35,10 +37,12 @@ class MiningFromGenesis:
         self.blocks = [MiningFromGenesis.GENESIS_BLOCK]
         self.coinbase_transactions = []
         self.current_height = 1
+        self.current_hash_rate = 0
         time_offset_for_nonce = int(time.time()) * (10 ** 52)
         print(f"Time offset for nonce: {time_offset_for_nonce}, type {type(time_offset_for_nonce)}")
         MiningFromGenesis.START_NONCE = hex(int("4206900000000000000000000000000000000000000000000000000000000000", 16) + time_offset_for_nonce)
         print(f"Starting nonce: {MiningFromGenesis.START_NONCE}")
+        print(f"Expected tries: {MiningFromGenesis.EXPECTED_TRIES}")
 
     def start(self, num_blocks = 10):
         #self.load_from_files()
@@ -49,6 +53,7 @@ class MiningFromGenesis:
             tries = result[1]
             num_tries.append(tries)
             MiningFromGenesis.EXPECTED_TRIES = sum(num_tries) / len(num_tries)
+            print(f"Average tries: {MiningFromGenesis.EXPECTED_TRIES}")
             self.blocks.append(block)
             self.save_to_files()
 
@@ -64,6 +69,7 @@ class MiningFromGenesis:
                 time_diff = time_now - last_time
                 last_time = time_now
                 hash_rate = MiningFromGenesis.UPDATE_RATE / time_diff
+                self.current_hash_rate = hash_rate
                 MiningFromGenesis.update_progress(number_of_tries / MiningFromGenesis.EXPECTED_TRIES, hash_rate)
         return (new_block, number_of_tries)
 
@@ -113,6 +119,7 @@ class MiningFromGenesis:
     def is_valid_block(block):
         block_id = MiningFromGenesis.get_id_from_json(block)
         if int(block_id, 16) <= int(block["T"], 16):
+            print(f"\nBlock ID {block_id} is valid")
             return True
         return False
 
@@ -122,7 +129,69 @@ class MiningFromGenesis:
 
     @staticmethod
     def get_id_from_json(object_json):
-        return hashlib.sha256(json_canonical.canonicalize(object_json)).digest().hex()
+        return MiningFromGenesis.calculate_hash(json_canonical.canonicalize(object_json))
+
+    # Here you can choose between CPU and GPU
+    @staticmethod
+    def calculate_hash(block):
+        return MiningFromGenesis.calculate_hash_on_cpu(block)
+        # return MiningFromGenesis.calculate_hash_on_gpu(block)
+
+    @staticmethod
+    def calculate_hash_on_cpu(block):
+        return hashlib.sha256(block).digest().hex()
+
+    @staticmethod
+    def calculate_hash_on_gpu(block):
+
+        headers = cl.get_cl_header_version()
+        print(f"OpenCL headers version: {headers}")
+
+        # Create an OpenCL context and command queue
+        ctx = cl.create_some_context()
+        queue = cl.CommandQueue(ctx)
+
+        # Set up the input data
+        input_data = b"hello world"
+        input_data_gpu = cl.Buffer(ctx, cl.mem_flags.READ_ONLY, len(input_data))
+        cl.enqueue_copy(queue, input_data_gpu, input_data)
+
+        # Set up the output buffer
+        hash_output_gpu = cl.Buffer(ctx, cl.mem_flags.WRITE_ONLY, 32)
+
+        # Write the OpenCL kernel
+        kernel = """
+        __kernel void mysha(__global const uchar *input, __global uchar *output)
+        {
+            // Calculate the SHA-256 hash using the OpenCL SHA-256 functions
+            uchar hash[32];
+            sha256(input, 11, hash);
+
+            // Copy the hash to the output buffer
+            for (int i = 0; i < 32; i++)
+            {
+                output[i] = hash[i];
+            }
+        }
+        """
+
+        # Compile the kernel
+        program = cl.Program(ctx, kernel).build()
+
+        # Execute the kernel
+        global_size = (1,)
+        local_size = (1,)
+        program.mysha(queue, global_size, local_size, input_data_gpu, hash_output_gpu)
+
+        # Wait for the kernel to finish executing
+        queue.finish()
+
+        # Copy the hash output back to the host
+        hash_output = bytearray(32)
+        cl.enqueue_copy(queue, hash_output, hash_output_gpu)
+
+        return hash_output.hex()
+    
     @staticmethod
     def update_progress(progress, hash_rate):
       # Add T, M, G, etc. to hash rate, depending on how big it is
@@ -172,5 +241,5 @@ class MiningFromGenesis:
 
 if __name__ == "__main__":
     miner = MiningFromGenesis()
-    miner.start(1000)
+    miner.start(100)
     #print(miner.blocks)
