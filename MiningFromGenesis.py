@@ -36,6 +36,7 @@ class MiningFromGenesis:
         self.blocks = [MiningFromGenesis.GENESIS_BLOCK]
         self.coinbase_transactions = []
         self.current_height = 1
+        self.hash_rates = []
         time_offset_for_nonce = int(time.time()) * (10 ** 52)
         print(f"Time offset for nonce: {time_offset_for_nonce}, type {type(time_offset_for_nonce)}")
         MiningFromGenesis.START_NONCE = hex(int("4206900000000000000000000000000000000000000000000000000000000000", 16) + time_offset_for_nonce)
@@ -65,6 +66,8 @@ class MiningFromGenesis:
                 time_diff = time_now - last_time
                 last_time = time_now
                 hash_rate = MiningFromGenesis.UPDATE_RATE / time_diff
+                self.hash_rates.append(hash_rate)
+                hash_rate = sum(self.hash_rates[:20]) / len(self.hash_rates[:20])
                 MiningFromGenesis.update_progress(number_of_tries / MiningFromGenesis.EXPECTED_TRIES, hash_rate)
         return (new_block, number_of_tries)
 
