@@ -117,6 +117,52 @@ class MiningFromGenesis:
     @staticmethod
     def get_id_from_json(object_json):
         return hashlib.sha256(json_canonical.canonicalize(object_json)).digest().hex()
+    @staticmethod
+    def update_progress(progress, hash_rate):
+      # Add T, M, G, etc. to hash rate, depending on how big it is
+      if hash_rate < 10 ** 3:
+          hash_rate_str = f"{round(hash_rate)} H/s"
+      elif hash_rate < 10 ** 6:
+          hash_rate_str = f"{round(hash_rate / 10 ** 3)} KH/s"
+      elif hash_rate < 10 ** 9:
+          hash_rate_str = f"{round(hash_rate / 10 ** 6)} MH/s"
+      elif hash_rate < 10 ** 12:
+          hash_rate_str = f"{round(hash_rate / 10 ** 9)} GH/s"
+      else:
+          hash_rate_str = f"{round(hash_rate / 10 ** 12)} TH/s"
+
+      hash_rate_str = hash_rate_str.rjust(9)
+
+      bar_length = 40
+      if isinstance(progress, int):
+          progress = float(progress)
+      if not isinstance(progress, float):
+          progress = 0
+      if progress < 0:
+          progress = 0
+      cleaned_progress = progress
+      if progress >= 1:
+          cleaned_progress = 1
+
+      block = int(round(bar_length * cleaned_progress))
+      # also make sure that the percentage always takes up 5 characters
+      percentage_str = "{0:.1f}%".format(progress * 100).rjust(6)
+
+      # calculate time estimate
+      time_estimate = (1 - progress) * (MiningFromGenesis.EXPECTED_TRIES / hash_rate)
+      prefix = " "
+      if time_estimate < 0:
+          time_estimate = time_estimate * -1
+          prefix = "-"
+      time_estimate_seconds = int(time_estimate) % 60
+      time_estimate_minutes = int(time_estimate / 60) % 60
+      time_estimate_hours = int(time_estimate / 3600)
+      time_estimate_str = prefix + f"{time_estimate_hours:02d}:{time_estimate_minutes:02d}:{time_estimate_seconds:02d}"
+
+      text = "Progress: [{0}] {1} {2} {3}\r".format( "#" * block + "-" * (bar_length - block), percentage_str, hash_rate_str, time_estimate_str)
+      sys.stdout.write(text)
+      sys.stdout.flush()
+
 
 if __name__ == "__main__":
     miner = MiningFromGenesis()
