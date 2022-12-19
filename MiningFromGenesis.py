@@ -58,13 +58,11 @@ class MiningFromGenesis:
         number_of_tries = int(new_block["nonce"], 16) - int(MiningFromGenesis.START_NONCE, 16)
         while not MiningFromGenesis.is_valid_block(new_block):
             new_block["nonce"] = MiningFromGenesis.increment_nonce(new_block["nonce"])
-            # print every 100000 tries
             number_of_tries = int(new_block["nonce"], 16) - int(MiningFromGenesis.START_NONCE, 16)
             if number_of_tries % MiningFromGenesis.UPDATE_RATE == 0:
                 time_now = time.time()
                 time_diff = time_now - last_time
                 last_time = time_now
-                print(f"Block {len(self.blocks)}: {number_of_tries} tries, hash rate: {round(hash_rate)} hashes per second")
                 hash_rate = MiningFromGenesis.UPDATE_RATE / time_diff
                 MiningFromGenesis.update_progress(number_of_tries / MiningFromGenesis.EXPECTED_TRIES, hash_rate)
         return (new_block, number_of_tries)
@@ -115,7 +113,6 @@ class MiningFromGenesis:
     def is_valid_block(block):
         block_id = MiningFromGenesis.get_id_from_json(block)
         if int(block_id, 16) <= int(block["T"], 16):
-            print(f"Block ID {block_id} is valid")
             return True
         return False
 
