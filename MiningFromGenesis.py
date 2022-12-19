@@ -42,9 +42,13 @@ class MiningFromGenesis:
 
     def start(self, num_blocks = 10):
         #self.load_from_files()
+        num_tries = []
         while len(self.blocks) < num_blocks:
             result = self.mine_next_block()
             block = result[0]
+            tries = result[1]
+            num_tries.append(tries)
+            MiningFromGenesis.EXPECTED_TRIES = sum(num_tries) / len(num_tries)
             self.blocks.append(block)
             self.save_to_files()
 
